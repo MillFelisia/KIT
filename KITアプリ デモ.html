@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KITアプリ デモ</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&amp;family=Barlow+Condensed:wght@400;600;700&amp;family=Zen+Kaku+Gothic+Antique:wght@500;700;900&amp;display=swap">
+<style>
+:root{
+  /* Layout: 黒い地に、角のない黄色のタイルを縦に積む。タイルは下向きの切り欠きで次へつながる（リーフレットと同じ組み方）。 */
+  --yellow:#F8EE47;
+  --ink:#000000;
+  --paper:#FFFFFF;
+  --main:#009D6F;    /* 主菜 */
+  --staple:#D32D34;  /* 主食 */
+  --water:#42B4E9;   /* 水 */
+  --stage:#5F5F5F;
+  --text:"Barlow","Zen Kaku Gothic Antique","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+  --cond:"Barlow Condensed","Barlow","Zen Kaku Gothic Antique","Hiragino Sans",sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--stage);color:var(--ink);font-family:var(--text);font-weight:500;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;margin:0;border-radius:0;-webkit-appearance:none;appearance:none;touch-action:manipulation}
+p,h1,h2{margin:0}
+:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.demo :focus-visible,.next :focus-visible,.tabs :focus-visible,.sheet-bar :focus-visible{outline-color:var(--paper)}
+
+/* ---- stage / device ---- */
+.stage{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px}
+.demo{flex:none;display:flex;align-items:center;gap:6px;color:var(--paper);font-size:12px;font-weight:700}
+.demo[hidden]{display:none}
+.demo-label{margin-right:4px;opacity:.8}
+.demo button{height:32px;padding:0 12px;border:2px solid var(--paper);background:transparent;color:var(--paper);font-weight:700;cursor:pointer}
+.demo button[aria-pressed="true"]{background:var(--paper);color:var(--ink)}
+.demo .demo-hide{width:32px;padding:0;border-color:transparent;font-size:20px;line-height:1}
+.device{flex:1 1 auto;min-height:0;width:410px;max-width:100%;max-height:864px;border:10px solid #111;border-radius:38px;overflow:hidden;background:var(--ink);box-shadow:0 18px 40px rgb(0 0 0 / .35)}
+.app{position:relative;height:100%;display:flex;flex-direction:column;background:var(--ink);overflow:hidden}
+@media (max-width:480px){
+  .stage{padding:0;gap:0;justify-content:flex-start}
+  .demo{width:100%;padding:6px 10px;background:#2B2B2B}
+  .device{width:100%;max-height:none;border:0;border-radius:0;box-shadow:none}
+}
+
+/* ---- shared pieces: the squares of the I ---- */
+[data-item="main"]{--c:var(--main)}
+[data-item="staple"]{--c:var(--staple)}
+[data-item="water"]{--c:var(--water)}
+.i{display:flex;flex-direction:column;gap:var(--sg);flex:none}
+.i.xs{--s:8px;--f:2px;--sg:1px;--r:2px;--ri:0px}
+.i.sm{--s:14px;--f:3px;--sg:2px;--r:2px;--ri:0px}
+.sq,.seg{display:block;position:relative;width:var(--s);height:var(--s);border:var(--f) solid var(--ink);background:var(--paper);padding:0}
+.sq.on,.seg.on{background:var(--c)}
+.sq.is-next::after,.seg.is-next::after{content:"";position:absolute;inset:var(--ri);border:var(--r) solid var(--c)}
+.kt{display:block;flex:none;height:var(--h);width:auto;fill:var(--ink)}
+.qr{display:block;fill:currentColor}
+
+/* ---- header ---- */
+.top{flex:none;margin:8px 8px 0;padding:12px 14px;background:var(--yellow);display:flex;align-items:center;justify-content:space-between}
+.logo{--h:26px;display:flex;align-items:flex-start;gap:4px}
+.tag{font:400 18px/1 var(--cond);letter-spacing:.02em}
+.tag b{font-weight:700}
+
+/* ---- scroll area and tiles ---- */
+.scroll{position:relative;flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:12px;padding:12px 8px 16px;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+.panel{position:relative;flex:none;background:var(--yellow);padding:16px 14px 18px;display:flex;flex-direction:column;gap:14px}
+.notch::after{content:"";position:absolute;left:50%;top:100%;margin-left:-12px;border:12px solid transparent;border-top-color:var(--yellow);border-bottom-width:0}
+.panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.panel-head h1,.panel-head h2{font-size:18px;font-weight:900;line-height:1.2}
+.hint{font-size:12px;color:rgb(0 0 0 / .72)}
+
+/* ---- hero: わが家のKIT ---- */
+.days{display:flex;align-items:baseline;gap:6px}
+.days-num{font:600 104px/.78 var(--cond)}
+.days-unit{font-size:26px;font-weight:900;line-height:1}
+.days-note{margin-left:auto;font-size:13px;font-weight:700;white-space:nowrap}
+.kitwrap{position:relative;margin:0 -14px}
+.kitwrap::after{content:"";position:absolute;top:0;right:0;bottom:0;width:34px;background:linear-gradient(90deg,rgb(248 238 71 / 0),var(--yellow));opacity:0;pointer-events:none;transition:opacity .2s}
+.kitwrap.more::after{opacity:1}
+.kit{--s:26px;--f:5px;--sg:6px;--g:6px;--r:3px;--ri:2px;--h:calc(var(--s) * 3 + var(--sg) * 2);position:relative;display:flex;align-items:flex-start;gap:var(--g);overflow-x:auto;overscroll-behavior-x:contain;padding:6px 14px 34px;scrollbar-width:none}
+.kit::-webkit-scrollbar{display:none}
+.col{position:relative;flex:none;display:flex;flex-direction:column;gap:var(--sg)}
+.seg{cursor:pointer}
+.col.m-min::after,.col.m-week::after{content:"";position:absolute;top:calc(var(--h) + 5px);right:calc(var(--g) / -2 - 6px);border:6px solid transparent;border-bottom-color:var(--ink);border-top-width:0}
+.col.m-min::before,.col.m-week::before{position:absolute;top:calc(var(--h) + 15px);right:calc(var(--g) / -2);transform:translateX(50%);font-size:11px;font-weight:700;line-height:1;white-space:nowrap}
+.col.m-min::before{content:"最低ライン"}
+.col.m-week::before{content:"1週間"}
+.add{flex:none;width:var(--s);height:var(--h);padding:0;border:3px dashed var(--ink);background:transparent;display:grid;place-items:center;cursor:pointer}
+.add svg{width:14px;height:14px}
+.add.is-next{border-style:solid;background:var(--paper)}
+.totals{list-style:none;margin:0;padding:12px 0 0;border-top:3px solid var(--ink);display:grid;grid-template-columns:repeat(3,auto);justify-content:space-between;gap:8px}
+.totals li{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;white-space:nowrap}
+.totals .sq{--s:14px;--f:3px;flex:none}
+.totals b{font:600 22px/1 var(--text)}
+
+/* ---- 次に買い足すもの (inverse band) ---- */
+.next{flex:none;padding:4px 6px 2px;color:var(--paper);display:grid;grid-template-columns:auto 1fr;gap:12px 14px;align-items:center}
+.next-chip{background:var(--yellow);padding:8px 10px}
+.next-label{font-size:12px;font-weight:700;color:var(--yellow)}
+.next-what{margin-top:2px;font-size:22px;font-weight:900;line-height:1.25}
+.next-then{margin-top:2px;font-size:13px;color:rgb(255 255 255 / .8)}
+.cta{grid-column:1 / -1;height:52px;border:0;background:var(--yellow);color:var(--ink);font-size:16px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer}
+.cta .qr{width:22px;height:22px}
+
+/* ---- 置き場所 ---- */
+.rows{list-style:none;margin:0;padding:0;border-top:3px solid var(--ink)}
+.rows li{padding:12px 0;border-bottom:2px solid var(--ink);display:flex;flex-direction:column;gap:8px}
+.rows li:last-child{border-bottom:0;padding-bottom:0}
+.place{font-size:15px;font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chipbtn{display:flex;align-items:center;gap:8px;height:44px;padding:0 12px 0 8px;border:3px solid var(--ink);background:var(--yellow);font-size:14px;font-weight:900;cursor:pointer}
+.chip-n{font-weight:700;font-size:12px}
+.chip-n b{font:600 20px/1 var(--text);margin-right:1px}
+
+/* ---- 収納箱 ---- */
+.boxes{border-top:3px solid var(--ink)}
+.box{border-bottom:2px solid var(--ink)}
+.box:last-child{border-bottom:0}
+.box summary{list-style:none;display:flex;align-items:center;gap:12px;min-height:60px;padding:8px 0;cursor:pointer}
+.box summary::-webkit-details-marker{display:none}
+.stack{display:flex;flex-direction:column;gap:2px;flex:none}
+.stack i{display:block;width:11px;height:11px;border:3px solid var(--ink);background:var(--paper)}
+.stack i.f{background:var(--ink)}
+.box-names{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.box-jp{font-size:15px;font-weight:900;line-height:1.1}
+.box-en{font:400 16px/1 var(--cond);letter-spacing:.01em}
+.box-en b{font-weight:700}
+.box-count{flex:none;display:flex;align-items:baseline;gap:6px;font-size:11px;font-weight:700}
+.box-count b{font:600 20px/1 var(--text)}
+.checks{list-style:none;margin:0;padding:0 0 12px 23px;display:grid;grid-template-columns:1fr 1fr;gap:2px 12px}
+.checks label{display:flex;align-items:center;gap:8px;min-height:36px;font-size:14px;font-weight:700;cursor:pointer}
+.checks input{-webkit-appearance:none;appearance:none;flex:none;width:18px;height:18px;margin:0;border:3px solid var(--ink);border-radius:0;background:var(--paper);cursor:pointer}
+.checks input:checked{background:var(--ink)}
+
+/* ---- tab bar ---- */
+.tabs{flex:none;display:grid;grid-template-columns:repeat(3,1fr);background:var(--ink);border-top:2px solid rgb(255 255 255 / .2);padding:6px 8px 10px}
+.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:48px;border:0;background:none;color:rgb(255 255 255 / .75);font-size:11px;font-weight:700;cursor:pointer}
+.tab[aria-current="page"]{color:var(--yellow)}
+.tab svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2.25;stroke-linecap:square;stroke-linejoin:miter}
+
+/* ---- toast ---- */
+.toast{position:absolute;left:8px;right:8px;top:8px;z-index:4;padding:12px 14px;background:var(--paper);border:3px solid var(--ink);font-size:14px;font-weight:700;opacity:0;transform:translateY(-8px);pointer-events:none;transition:opacity .2s,transform .2s}
+.toast.show{opacity:1;transform:none}
+
+/* ---- sheet: ステッカーを読み込む ---- */
+.backdrop{position:absolute;inset:0;z-index:5;display:flex;align-items:flex-end;background:rgb(0 0 0 / .62)}
+.backdrop[hidden]{display:none}
+.sheet{width:100%;max-height:92%;overflow-y:auto;background:var(--yellow);animation:up .24s ease-out}
+.sheet-bar{position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;height:52px;padding:0 4px 0 16px;background:var(--ink);color:var(--yellow)}
+.sheet-bar h2{font-size:16px;font-weight:900}
+.sheet-x{width:44px;height:44px;border:0;background:none;color:var(--yellow);font-size:26px;line-height:1;cursor:pointer}
+.sheet-body{padding:16px;display:flex;flex-direction:column;gap:14px}
+.sheet-body[hidden]{display:none}
+.finder{display:flex;align-items:center;justify-content:center;gap:16px;padding:12px;background:var(--ink);color:var(--paper);font-size:13px;font-weight:700;line-height:1.5}
+.finder svg{width:76px;height:76px;flex:none}
+.sheet-note{font-size:12px;font-weight:700}
+.stickers{display:flex;flex-direction:column;gap:8px}
+.stk{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;width:100%;padding:10px 12px;border:3px solid var(--ink);background:var(--yellow);text-align:left}
+button.stk{cursor:pointer}
+.stk-jp{display:block;font-size:13px;font-weight:900;line-height:1.1}
+.stk-en{display:block;margin-top:3px;font:400 30px/1 var(--cond)}
+.stk-side{display:flex;flex-direction:column;align-items:flex-end;gap:6px;font-size:12px;font-weight:700}
+.stk-side .qr{width:26px;height:26px}
+.modes{display:grid;grid-template-columns:1fr 1fr;border:3px solid var(--ink)}
+.mode{height:44px;border:0;background:var(--yellow);font-size:15px;font-weight:900;cursor:pointer}
+.mode[aria-pressed="true"]{background:var(--ink);color:var(--yellow)}
+.stepper{display:grid;grid-template-columns:56px 1fr 56px;align-items:center;gap:12px}
+.step{height:56px;padding:0;border:3px solid var(--ink);background:var(--paper);font:600 28px/1 var(--text);cursor:pointer}
+.step:disabled{opacity:.35;cursor:default}
+.amt{display:flex;align-items:baseline;justify-content:center;gap:4px}
+.amt output{font:600 64px/.9 var(--cond)}
+.amt-unit{font-size:20px;font-weight:900}
+.amt-sub{margin-left:10px;font:600 20px/1 var(--text)}
+.per{font-size:12px;text-align:center;color:rgb(0 0 0 / .72)}
+.primary{height:56px;border:0;background:var(--ink);color:var(--yellow);font-size:17px;font-weight:900;cursor:pointer}
+.primary:disabled{opacity:.4;cursor:default}
+
+@keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+@keyframes pop{0%{transform:scale(.5)}60%{transform:scale(1.14)}100%{transform:scale(1)}}
+@keyframes ring{0%,100%{opacity:1}50%{opacity:.45}}
+.seg.just{animation:pop .3s ease-out}
+.seg.is-next::after{animation:ring 1.6s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){
+  .seg.just,.seg.is-next::after,.sheet{animation:none}
+  .toast,.kitwrap::after{transition:none}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="g-qr" viewBox="0 0 21 21">
+      <path fill-rule="evenodd" d="M0 0h7v7H0zm1 1v5h5V1zM14 0h7v7h-7zm1 1v5h5V1zM0 14h7v7H0zm1 1v5h5v-5z"/>
+      <path d="M2 2h3v3H2zM16 2h3v3h-3zM2 16h3v3H2zM9 0h2v2H9zM12 2h1v3h-1zM9 4h2v2H9zM0 9h2v2H0zM3 9h3v1H3zM8 8h3v3H8zM12 9h2v1h-2zM15 8h2v2h-2zM19 9h2v3h-2zM9 12h1v3H9zM11 13h3v2h-3zM16 12h2v2h-2zM14 16h2v2h-2zM18 15h3v2h-3zM9 17h3v1H9zM11 19h2v2h-2zM16 19h3v2h-3z"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="stage">
+  <div class="demo" id="demo">
+    <span class="demo-label">デモの状態</span>
+    <button type="button" data-preset="p1" aria-pressed="false">3日分</button>
+    <button type="button" data-preset="p2" aria-pressed="false">備えが増えた</button>
+    <button type="button" data-preset="p3" aria-pressed="false">長くなった</button>
+    <button type="button" class="demo-hide" id="demoHide" aria-label="デモの切り替えを隠す">×</button>
+  </div>
+
+  <div class="device">
+    <div class="app" id="app">
+
+      <header class="top" id="top">
+        <div class="logo" role="img" aria-label="KIT">
+          <svg class="kt" viewBox="0 0 574 700" aria-hidden="true"><path d="M0 0H166V282L379 0H568L338 308L574 700H389L224 420L166 499V700H0Z"/></svg>
+          <span class="i xs"><span class="sq on" data-item="main"></span><span class="sq on" data-item="staple"></span><span class="sq on" data-item="water"></span></span>
+          <svg class="kt" viewBox="0 0 544 700" aria-hidden="true"><path d="M0 0H544V143H352V700H186V143H0Z"/></svg>
+        </div>
+        <p class="tag"><b>K</b>eep <b>I</b>n <b>T</b>ouch</p>
+      </header>
+
+      <main class="scroll" id="scroll">
+
+        <section class="panel notch" aria-labelledby="heroTitle">
+          <div class="panel-head">
+            <h1 id="heroTitle">わが家のKIT</h1>
+            <p class="hint">「I」が1本で1日分</p>
+          </div>
+          <div class="days">
+            <span class="days-num" id="daysNum">4</span>
+            <span class="days-unit">日分</span>
+            <p class="days-note" id="daysNote">1週間まであと3日</p>
+          </div>
+          <div class="kitwrap" id="kitwrap">
+            <div class="kit" id="kit" role="group" aria-label="わが家のKIT。四角をタップすると、備えを記録できます"></div>
+          </div>
+          <ul class="totals" aria-label="品目ごとの量">
+            <li><span class="sq on" data-item="main" aria-hidden="true"></span>主菜<span><b id="tot-main">12</b>食</span></li>
+            <li><span class="sq on" data-item="staple" aria-hidden="true"></span>主食<span><b id="tot-staple">15</b>食</span></li>
+            <li><span class="sq on" data-item="water" aria-hidden="true"></span>水<span><b id="tot-water">15</b>L</span></li>
+          </ul>
+        </section>
+
+        <section class="next" aria-labelledby="nextLabel">
+          <div class="next-chip" aria-hidden="true">
+            <span class="i sm">
+              <span class="sq" id="mini-main" data-item="main"></span>
+              <span class="sq" id="mini-staple" data-item="staple"></span>
+              <span class="sq" id="mini-water" data-item="water"></span>
+            </span>
+          </div>
+          <div>
+            <p class="next-label" id="nextLabel">次に買い足すもの</p>
+            <p class="next-what" id="nextWhat">主菜を3食</p>
+            <p class="next-then" id="nextThen">そろうと5日分</p>
+          </div>
+          <button type="button" class="cta" id="scanOpen">
+            <svg class="qr" viewBox="0 0 21 21" aria-hidden="true"><use href="#g-qr"/></svg>
+            ステッカーを読み込む
+          </button>
+        </section>
+
+        <section class="panel" id="places" aria-labelledby="placesTitle">
+          <div class="panel-head">
+            <h2 id="placesTitle">置き場所</h2>
+            <p class="hint">ステッカーを貼った場所</p>
+          </div>
+          <ul class="rows">
+            <li>
+              <span class="place">キッチンの食品棚</span>
+              <span class="chips">
+                <button type="button" class="chipbtn" data-sticker="main">
+                  <span class="i xs" aria-hidden="true"><span class="sq on" data-item="main"></span><span class="sq"></span><span class="sq"></span></span>
+                  主菜<span class="chip-n"><b id="chip-main">4</b>日分</span>
+                </button>
+                <button type="button" class="chipbtn" data-sticker="staple">
+                  <span class="i xs" aria-hidden="true"><span class="sq"></span><span class="sq on" data-item="staple"></span><span class="sq"></span></span>
+                  主食<span class="chip-n"><b id="chip-staple">5</b>日分</span>
+                </button>
+              </span>
+            </li>
+            <li>
+              <span class="place">キッチンの床</span>
+              <span class="chips">
+                <button type="button" class="chipbtn" data-sticker="water">
+                  <span class="i xs" aria-hidden="true"><span class="sq"></span><span class="sq"></span><span class="sq on" data-item="water"></span></span>
+                  水<span class="chip-n"><b id="chip-water">5</b>日分</span>
+                </button>
+              </span>
+            </li>
+          </ul>
+        </section>
+
+        <section class="panel" id="boxes" aria-labelledby="boxesTitle">
+          <div class="panel-head">
+            <h2 id="boxesTitle">収納箱</h2>
+            <p class="hint">非常時に使うもの</p>
+          </div>
+          <div class="boxes">
+            <details class="box">
+              <summary>
+                <span class="stack" aria-hidden="true"><i class="f"></i><i></i><i></i></span>
+                <span class="box-names"><span class="box-jp">電気用品</span><span class="box-en"><b>K</b>eep　Electrical items</span></span>
+                <span class="box-count">中身<b>4/4</b></span>
+              </summary>
+              <ul class="checks">
+                <li><label for="bk1"><input type="checkbox" id="bk1" checked>ラジオ</label></li>
+                <li><label for="bk2"><input type="checkbox" id="bk2" checked>単3電池</label></li>
+                <li><label for="bk3"><input type="checkbox" id="bk3" checked>LEDランタン</label></li>
+                <li><label for="bk4"><input type="checkbox" id="bk4" checked>モバイルバッテリー</label></li>
+              </ul>
+            </details>
+            <details class="box">
+              <summary>
+                <span class="stack" aria-hidden="true"><i></i><i class="f"></i><i></i></span>
+                <span class="box-names"><span class="box-jp">トイレ用品</span><span class="box-en"><b>I</b>n　Toilet items</span></span>
+                <span class="box-count">中身<b>4/4</b></span>
+              </summary>
+              <ul class="checks">
+                <li><label for="bi1"><input type="checkbox" id="bi1" checked>簡易トイレ</label></li>
+                <li><label for="bi2"><input type="checkbox" id="bi2" checked>使い捨て袋</label></li>
+                <li><label for="bi3"><input type="checkbox" id="bi3" checked>除菌シート</label></li>
+                <li><label for="bi4"><input type="checkbox" id="bi4" checked>消臭袋</label></li>
+              </ul>
+            </details>
+            <details class="box">
+              <summary>
+                <span class="stack" aria-hidden="true"><i></i><i></i><i class="f"></i></span>
+                <span class="box-names"><span class="box-jp">衛生用品</span><span class="box-en"><b>T</b>ouch　Hygiene items</span></span>
+                <span class="box-count">中身<b>7/7</b></span>
+              </summary>
+              <ul class="checks">
+                <li><label for="bt1"><input type="checkbox" id="bt1" checked>歯ブラシ</label></li>
+                <li><label for="bt2"><input type="checkbox" id="bt2" checked>軍手</label></li>
+                <li><label for="bt3"><input type="checkbox" id="bt3" checked>マスク</label></li>
+                <li><label for="bt4"><input type="checkbox" id="bt4" checked>アルミシート</label></li>
+                <li><label for="bt5"><input type="checkbox" id="bt5" checked>除菌シート</label></li>
+                <li><label for="bt6"><input type="checkbox" id="bt6" checked>カイロ</label></li>
+                <li><label for="bt7"><input type="checkbox" id="bt7" checked>ホイッスル</label></li>
+              </ul>
+            </details>
+          </div>
+        </section>
+
+      </main>
+
+      <nav class="tabs" id="tabs" aria-label="メニュー">
+        <button type="button" class="tab" id="tabHome" aria-current="page">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"/><path d="M10 20v-6h4v6"/></svg>
+          ホーム
+        </button>
+        <button type="button" class="tab" id="tabPlaces">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21l-6-8.5V4h12v8.5z"/><path d="M10 8h4v4h-4z"/></svg>
+          置き場所
+        </button>
+        <button type="button" class="tab" id="tabRecord">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M12 8v8M8 12h8"/></svg>
+          記録する
+        </button>
+      </nav>
+
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+      <div class="backdrop" id="backdrop" hidden>
+        <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+          <div class="sheet-bar">
+            <h2 id="sheetTitle">ステッカーを読み込む</h2>
+            <button type="button" class="sheet-x" id="sheetClose" aria-label="閉じる">×</button>
+          </div>
+
+          <div class="sheet-body" id="step1">
+            <div class="finder" aria-hidden="true">
+              <svg viewBox="0 0 84 84"><path d="M4 22V4h18M62 4h18v18M80 62v18H62M22 80H4V62" fill="none" stroke="#F8EE47" stroke-width="4"/><use href="#g-qr" x="21" y="21" width="42" height="42" fill="#FFFFFF"/></svg>
+              <p>買い置きの場所に貼った<br>ステッカーのコードにかざす</p>
+            </div>
+            <p class="sheet-note">デモでは、読み込むステッカーをここから選びます。</p>
+            <div class="stickers" id="stickers"></div>
+          </div>
+
+          <div class="sheet-body" id="step2" hidden>
+            <div id="picked"></div>
+            <div class="modes" role="group" aria-label="記録の種類">
+              <button type="button" class="mode" data-mode="add" aria-pressed="true">買い足した</button>
+              <button type="button" class="mode" data-mode="use" aria-pressed="false">使った</button>
+            </div>
+            <div class="stepper">
+              <button type="button" class="step" id="amtMinus" aria-label="1日分へらす">−</button>
+              <div class="amt"><output id="amtDays">1</output><span class="amt-unit">日分</span><span class="amt-sub" id="amtSub">3食</span></div>
+              <button type="button" class="step" id="amtPlus" aria-label="1日分ふやす">+</button>
+            </div>
+            <p class="per" id="perNote"></p>
+            <button type="button" class="primary" id="commit">登録する</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var ITEMS = [
+    { id: 'main',   jp: '主菜', en: 'Main Dishes',  unit: '食', hint: '缶詰・レトルトなど',       place: 'キッチンの食品棚' },
+    { id: 'staple', jp: '主食', en: 'Staple Foods', unit: '食', hint: 'パックごはん・麺など',     place: 'キッチンの食品棚' },
+    { id: 'water',  jp: '水',   en: 'Water',        unit: 'L',  hint: '2Lのペットボトルなら1本半', place: 'キッチンの床' }
+  ];
+  var BY = {};
+  ITEMS.forEach(function (it) { BY[it.id] = it; });
+
+  var PER = 3;   // 1日分 = 3食 / 3L
+  var MIN = 3;   // 最低ラインの3本は、空でも並べておく
+  var MAX = 21;  // 3週間ぶんまで
+  var PRESETS = {
+    p1: { main: 3,  staple: 3,  water: 3 },
+    p2: { main: 4,  staple: 5,  water: 5 },
+    p3: { main: 10, staple: 10, water: 14 }
+  };
+  var K_PATH = 'M0 0H166V282L379 0H568L338 308L574 700H389L224 420L166 499V700H0Z';
+  var T_PATH = 'M0 0H544V143H352V700H186V143H0Z';
+
+  function $(id) { return document.getElementById(id); }
+  var kit = $('kit'), kitwrap = $('kitwrap'), scrollEl = $('scroll'), places = $('places');
+  var backdrop = $('backdrop'), step1 = $('step1'), step2 = $('step2');
+  var cols = [];
+  var preset = null;
+
+  // ---- model ----
+  function blank() { return { main: false, staple: false, water: false }; }
+  function full(c) { return c.main && c.staple && c.water; }
+  function isEmpty(c) { return !c.main && !c.staple && !c.water; }
+  function fromCounts(c) {
+    var n = Math.max(MIN, c.main, c.staple, c.water), a = [];
+    for (var i = 0; i < n; i++) a.push({ main: i < c.main, staple: i < c.staple, water: i < c.water });
+    return a;
+  }
+  function daysOf() { var d = 0; while (d < cols.length && full(cols[d])) d++; return d; }
+  function count(id) { var n = 0; cols.forEach(function (c) { if (c[id]) n++; }); return n; }
+  function missingAt(d) { var c = cols[d]; return ITEMS.filter(function (it) { return !c || !c[it.id]; }); }
+  function daysAfterFill(d) { var n = d + 1; while (n < cols.length && full(cols[n])) n++; return n; }
+  function noteFor(d) {
+    if (d === 0) return 'まずは最低ラインの3日分から';
+    if (d < 3) return '最低ラインまであと' + (3 - d) + '日';
+    if (d === 3) return '最低ラインの3日分をクリア';
+    if (d < 7) return '1週間まであと' + (7 - d) + '日';
+    return '1週間分をクリア';
+  }
+
+  // ---- view ----
+  function render(changed, focusSel) {
+    var d = daysOf();
+    var keep = kit.scrollLeft;
+    var h = '<svg class="kt" viewBox="0 0 574 700" aria-hidden="true"><path d="' + K_PATH + '"/></svg>';
+    cols.forEach(function (c, i) {
+      h += '<div class="col' + (i === 2 ? ' m-min' : '') + (i === 6 ? ' m-week' : '') + '">';
+      ITEMS.forEach(function (it) {
+        var on = c[it.id], next = !on && i === d, key = i + ':' + it.id;
+        h += '<button type="button" class="seg' + (on ? ' on' : '') + (next ? ' is-next' : '') +
+          (changed && changed[key] ? ' just' : '') + '" data-i="' + i + '" data-item="' + it.id +
+          '" aria-pressed="' + on + '" aria-label="' + (i + 1) + '日目の' + it.jp + '：' +
+          (on ? 'あり' : next ? '次に買い足す' : 'なし') + '"></button>';
+      });
+      h += '</div>';
+    });
+    if (cols.length < MAX) {
+      h += '<button type="button" class="add' + (d === cols.length ? ' is-next' : '') + '" id="addCol" aria-label="Iを1本足す">' +
+        '<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v12M1 7h12" fill="none" stroke="currentColor" stroke-width="3"/></svg></button>';
+    }
+    h += '<svg class="kt" viewBox="0 0 544 700" aria-hidden="true"><path d="' + T_PATH + '"/></svg>';
+    kit.innerHTML = h;
+    kit.scrollLeft = keep;
+    if (focusSel) { var el = kit.querySelector(focusSel); if (el) el.focus({ preventScroll: true }); }
+
+    $('daysNum').textContent = d;
+    $('daysNote').textContent = noteFor(d);
+    ITEMS.forEach(function (it) {
+      var n = count(it.id);
+      $('tot-' + it.id).textContent = n * PER;
+      $('chip-' + it.id).textContent = n;
+    });
+
+    if (d >= MAX) {
+      $('nextWhat').textContent = 'いまは十分です';
+      $('nextThen').textContent = '3週間分そろっています';
+      ITEMS.forEach(function (it) { $('mini-' + it.id).className = 'sq on'; });
+    } else {
+      var miss = missingAt(d);
+      $('nextWhat').textContent = miss.length === 1
+        ? miss[0].jp + 'を' + PER + miss[0].unit
+        : miss.map(function (m) { return m.jp + PER + m.unit; }).join('・');
+      $('nextThen').textContent = 'そろうと' + daysAfterFill(d) + '日分';
+      ITEMS.forEach(function (it) { $('mini-' + it.id).className = 'sq' + (miss.indexOf(it) >= 0 ? ' is-next' : ' on'); });
+    }
+    updateMore();
+  }
+  function updateMore() {
+    kitwrap.classList.toggle('more', kit.scrollWidth - kit.clientWidth - kit.scrollLeft > 4);
+  }
+
+  // ---- demo presets ----
+  function syncDemo() {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-preset]'), function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.preset === preset));
+    });
+  }
+  function setPreset(k) { cols = fromCounts(PRESETS[k]); preset = k; syncDemo(); kit.scrollLeft = 0; render(); kit.scrollLeft = 0; updateMore(); }
+  function clearPreset() { preset = null; syncDemo(); }
+
+  // ---- direct taps on the KIT ----
+  kit.addEventListener('click', function (e) {
+    var seg = e.target.closest('.seg');
+    if (seg) {
+      var i = +seg.dataset.i, id = seg.dataset.item, ch = {};
+      cols[i][id] = !cols[i][id];
+      ch[i + ':' + id] = true;
+      clearPreset();
+      render(ch, '.seg[data-i="' + i + '"][data-item="' + id + '"]');
+      return;
+    }
+    if (e.target.closest('.add') && cols.length < MAX) {
+      cols.push(blank());
+      clearPreset();
+      render(null, '#addCol');
+      kit.scrollTo({ left: kit.scrollWidth, behavior: 'smooth' });
+    }
+  });
+  kit.addEventListener('scroll', updateMore, { passive: true });
+  window.addEventListener('resize', updateMore);
+
+  // ---- sheet ----
+  var cur = null, mode = 'add', amt = 1, opener = null;
+  function stickerHTML(it, tag) {
+    var sq = ITEMS.map(function (x) {
+      return '<span class="sq' + (x.id === it.id ? ' on' : '') + '"' + (x.id === it.id ? ' data-item="' + it.id + '"' : '') + '></span>';
+    }).join('');
+    return '<' + tag + ' class="stk"' + (tag === 'button' ? ' type="button" data-sticker="' + it.id + '"' : '') + '>' +
+      '<span class="i sm" aria-hidden="true">' + sq + '</span>' +
+      '<span><span class="stk-jp">' + it.jp + '</span><span class="stk-en">' + it.en + '</span></span>' +
+      '<span class="stk-side"><svg class="qr" viewBox="0 0 21 21" aria-hidden="true"><use href="#g-qr"/></svg>' + it.place + '</span>' +
+      '</' + tag + '>';
+  }
+  $('stickers').innerHTML = ITEMS.slice().reverse().map(function (it) { return stickerHTML(it, 'button'); }).join('');
+
+  function setInert(on) { [$('top'), scrollEl, $('tabs')].forEach(function (el) { el.inert = on; }); }
+  function openSheet(stickerId, from) {
+    opener = from || null;
+    backdrop.hidden = false;
+    setInert(true);
+    if (stickerId) { pick(stickerId); }
+    else {
+      step1.hidden = false; step2.hidden = true;
+      $('sheetTitle').textContent = 'ステッカーを読み込む';
+      var first = $('stickers').querySelector('button'); if (first) first.focus({ preventScroll: true });
+    }
+  }
+  function closeSheet() {
+    backdrop.hidden = true;
+    setInert(false);
+    if (opener && opener.focus) opener.focus({ preventScroll: true });
+  }
+  function pick(id) {
+    cur = BY[id]; mode = 'add'; amt = 1;
+    step1.hidden = true; step2.hidden = false;
+    $('sheetTitle').textContent = '読み込みました';
+    $('picked').innerHTML = stickerHTML(cur, 'div');
+    syncStep();
+    $('commit').focus({ preventScroll: true });
+  }
+  function limit() { var n = count(cur.id); return mode === 'add' ? MAX - n : n; }
+  function syncStep() {
+    var max = limit(), none = max <= 0;
+    if (amt > max) amt = Math.max(1, max);
+    $('amtDays').textContent = none ? 0 : amt;
+    $('amtSub').textContent = (none ? 0 : amt * PER) + cur.unit;
+    $('amtMinus').disabled = none || amt <= 1;
+    $('amtPlus').disabled = none || amt >= max;
+    $('commit').disabled = none;
+    $('perNote').textContent = none
+      ? (mode === 'use' ? 'この場所の備えは、まだありません' : 'これ以上は記録できません')
+      : '1日分は' + PER + cur.unit + '（' + cur.hint + '）';
+    Array.prototype.forEach.call(document.querySelectorAll('.mode'), function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
+    });
+  }
+  function commit() {
+    var id = cur.id, ch = {}, first = null, i, j, k;
+    for (k = 0; k < amt; k++) {
+      if (mode === 'add') {
+        i = -1;
+        for (j = 0; j < cols.length; j++) { if (!cols[j][id]) { i = j; break; } }
+        if (i < 0) { if (cols.length >= MAX) break; cols.push(blank()); i = cols.length - 1; }
+        cols[i][id] = true; ch[i + ':' + id] = true; if (first === null) first = i;
+      } else {
+        i = -1;
+        for (j = cols.length - 1; j >= 0; j--) { if (cols[j][id]) { i = j; break; } }
+        if (i < 0) break;
+        cols[i][id] = false; ch[i + ':' + id] = true; first = i;
+      }
+    }
+    while (cols.length > MIN && isEmpty(cols[cols.length - 1])) cols.pop();
+    var msg = cur.jp + 'を' + amt + '日分、' + (mode === 'add' ? '足しました' : '使いました');
+    clearPreset();
+    closeSheet();
+    render(ch);
+    reveal(first);
+    toast(msg);
+  }
+  function reveal(i) {
+    scrollEl.scrollTo({ top: 0, behavior: 'smooth' });
+    var col = kit.querySelectorAll('.col')[i];
+    if (col) kit.scrollTo({ left: Math.max(0, col.offsetLeft - kit.clientWidth / 2 + col.offsetWidth / 2), behavior: 'smooth' });
+  }
+  var toastTimer = null;
+  function toast(text) {
+    var t = $('toast'); t.textContent = text; t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2600);
+  }
+
+  $('scanOpen').addEventListener('click', function (e) { openSheet(null, e.currentTarget); });
+  $('tabRecord').addEventListener('click', function (e) { openSheet(null, e.currentTarget); });
+  $('sheetClose').addEventListener('click', closeSheet);
+  backdrop.addEventListener('click', function (e) { if (e.target === backdrop) closeSheet(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !backdrop.hidden) closeSheet(); });
+  $('stickers').addEventListener('click', function (e) { var b = e.target.closest('[data-sticker]'); if (b) pick(b.dataset.sticker); });
+  places.addEventListener('click', function (e) { var b = e.target.closest('[data-sticker]'); if (b) openSheet(b.dataset.sticker, b); });
+  Array.prototype.forEach.call(document.querySelectorAll('.mode'), function (b) {
+    b.addEventListener('click', function () { mode = b.dataset.mode; amt = 1; syncStep(); });
+  });
+  $('amtMinus').addEventListener('click', function () { amt = Math.max(1, amt - 1); syncStep(); });
+  $('amtPlus').addEventListener('click', function () { amt = Math.min(limit(), amt + 1); syncStep(); });
+  $('commit').addEventListener('click', commit);
+
+  // ---- boxes: count the checked items ----
+  Array.prototype.forEach.call(document.querySelectorAll('.box'), function (box) {
+    var out = box.querySelector('.box-count b'), inputs = box.querySelectorAll('input');
+    box.addEventListener('change', function () {
+      var n = 0; Array.prototype.forEach.call(inputs, function (x) { if (x.checked) n++; });
+      out.textContent = n + '/' + inputs.length;
+    });
+  });
+
+  // ---- tabs ----
+  function setTab(name) {
+    $('tabHome').toggleAttribute('aria-current', name === 'home');
+    $('tabPlaces').toggleAttribute('aria-current', name === 'places');
+    if (name === 'home') $('tabHome').setAttribute('aria-current', 'page');
+    if (name === 'places') $('tabPlaces').setAttribute('aria-current', 'page');
+  }
+  $('tabHome').addEventListener('click', function () { scrollEl.scrollTo({ top: 0, behavior: 'smooth' }); });
+  $('tabPlaces').addEventListener('click', function () { scrollEl.scrollTo({ top: places.offsetTop - 12, behavior: 'smooth' }); });
+  scrollEl.addEventListener('scroll', function () {
+    setTab(scrollEl.scrollTop + 140 >= places.offsetTop ? 'places' : 'home');
+  }, { passive: true });
+
+  // ---- demo strip ----
+  $('demo').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-preset]');
+    if (b) { setPreset(b.dataset.preset); scrollEl.scrollTo({ top: 0 }); }
+  });
+  $('demoHide').addEventListener('click', function () { $('demo').hidden = true; });
+
+  setPreset('p2');
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(updateMore);
+})();
+</script>
+</body>
+</html>
