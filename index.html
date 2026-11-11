@@ -32,11 +32,11 @@ p,h1,h2{margin:0}
 .demo{flex:none;display:flex;align-items:center;gap:6px;color:var(--paper);font-size:12px;font-weight:700}
 .demo[hidden]{display:none}
 .demo-label{margin-right:4px;opacity:.8}
-.demo button{height:32px;padding:0 12px;border:2px solid var(--paper);background:transparent;color:var(--paper);font-weight:700;cursor:pointer}
+.demo button{height:32px;padding:0 10px;white-space:nowrap;border:2px solid var(--paper);background:transparent;color:var(--paper);font-weight:700;cursor:pointer}
 .demo button[aria-pressed="true"]{background:var(--paper);color:var(--ink)}
 .demo .demo-hide{width:32px;padding:0;border-color:transparent;font-size:20px;line-height:1}
 .device{flex:1 1 auto;min-height:0;width:410px;max-width:100%;max-height:864px;border:10px solid #111;border-radius:38px;overflow:hidden;background:var(--ink);box-shadow:0 18px 40px rgb(0 0 0 / .35)}
-.app{position:relative;height:100%;display:flex;flex-direction:column;background:var(--ink);overflow:hidden}
+.app{position:relative;height:100%;display:flex;flex-direction:column;background:var(--ink);overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 @media (max-width:480px){
   .stage{padding:0;gap:0;justify-content:flex-start}
   .demo{width:100%;padding:6px 10px;background:#2B2B2B}
@@ -83,10 +83,8 @@ p,h1,h2{margin:0}
 .kit::-webkit-scrollbar{display:none}
 .col{position:relative;flex:none;display:flex;flex-direction:column;gap:var(--sg)}
 .seg{cursor:pointer}
-.col.m-min::after,.col.m-week::after{content:"";position:absolute;top:calc(var(--h) + 5px);right:calc(var(--g) / -2 - 6px);border:6px solid transparent;border-bottom-color:var(--ink);border-top-width:0}
-.col.m-min::before,.col.m-week::before{position:absolute;top:calc(var(--h) + 15px);right:calc(var(--g) / -2);transform:translateX(50%);font-size:11px;font-weight:700;line-height:1;white-space:nowrap}
-.col.m-min::before{content:"最低ライン"}
-.col.m-week::before{content:"1週間"}
+.col[data-mark]::after{content:"";position:absolute;top:calc(var(--h) + 5px);right:calc(var(--g) / -2 - 6px);border:6px solid transparent;border-bottom-color:var(--ink);border-top-width:0}
+.col[data-mark]::before{content:attr(data-mark);position:absolute;top:calc(var(--h) + 15px);right:calc(var(--g) / -2);transform:translateX(50%);font-size:11px;font-weight:700;line-height:1;white-space:nowrap}
 .add{flex:none;width:var(--s);height:var(--h);padding:0;border:3px dashed var(--ink);background:transparent;display:grid;place-items:center;cursor:pointer}
 .add svg{width:14px;height:14px}
 .add.is-next{border-style:solid;background:var(--paper)}
@@ -114,6 +112,19 @@ p,h1,h2{margin:0}
 .chip-n{font-weight:700;font-size:12px}
 .chip-n b{font:600 20px/1 var(--text);margin-right:1px}
 
+/* ---- 点検 ---- */
+.due{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding-top:14px;border-top:3px solid var(--ink)}
+.due-label{font-size:12px;font-weight:700}
+.due-date{margin-top:8px;font-size:16px;font-weight:900;line-height:1;white-space:nowrap}
+.due-date b{font:600 46px/.8 var(--cond);margin:0 1px}
+.due-left{font-size:13px;font-weight:700;line-height:1.2;white-space:nowrap;text-align:right}
+.due-left b{font:600 26px/1 var(--text);margin:0 2px}
+.due.over .due-left{padding:6px 8px;background:var(--ink);color:var(--yellow)}
+.meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0;font-size:12px}
+.meta dt{color:rgb(0 0 0 / .72)}
+.meta dd{margin:3px 0 0;font-size:14px;font-weight:700}
+.ghost{height:48px;border:3px solid var(--ink);background:transparent;font-size:15px;font-weight:900;cursor:pointer}
+
 /* ---- 収納箱 ---- */
 .boxes{border-top:3px solid var(--ink)}
 .box{border-bottom:2px solid var(--ink)}
@@ -126,7 +137,6 @@ p,h1,h2{margin:0}
 .box-names{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .box-jp{font-size:15px;font-weight:900;line-height:1.1}
 .box-en{font:400 16px/1 var(--cond);letter-spacing:.01em}
-.box-en b{font-weight:700}
 .box-count{flex:none;display:flex;align-items:baseline;gap:6px;font-size:11px;font-weight:700}
 .box-count b{font:600 20px/1 var(--text)}
 .checks{list-style:none;margin:0;padding:0 0 12px 23px;display:grid;grid-template-columns:1fr 1fr;gap:2px 12px}
@@ -200,10 +210,11 @@ button.stk{cursor:pointer}
 
 <div class="stage">
   <div class="demo" id="demo">
-    <span class="demo-label">デモの状態</span>
+    <span class="demo-label">デモ</span>
     <button type="button" data-preset="p1" aria-pressed="false">3日分</button>
-    <button type="button" data-preset="p2" aria-pressed="false">備えが増えた</button>
-    <button type="button" data-preset="p3" aria-pressed="false">長くなった</button>
+    <button type="button" data-preset="p2" aria-pressed="false">4日分</button>
+    <button type="button" data-preset="p3" aria-pressed="false">10日分</button>
+    <button type="button" id="demoExhibit">展示モード</button>
     <button type="button" class="demo-hide" id="demoHide" aria-label="デモの切り替えを隠す">×</button>
   </div>
 
@@ -300,7 +311,7 @@ button.stk{cursor:pointer}
             <details class="box">
               <summary>
                 <span class="stack" aria-hidden="true"><i class="f"></i><i></i><i></i></span>
-                <span class="box-names"><span class="box-jp">電気用品</span><span class="box-en"><b>K</b>eep　Electrical items</span></span>
+                <span class="box-names"><span class="box-jp">電気用品</span><span class="box-en">Electrical items</span></span>
                 <span class="box-count">中身<b>4/4</b></span>
               </summary>
               <ul class="checks">
@@ -313,7 +324,7 @@ button.stk{cursor:pointer}
             <details class="box">
               <summary>
                 <span class="stack" aria-hidden="true"><i></i><i class="f"></i><i></i></span>
-                <span class="box-names"><span class="box-jp">トイレ用品</span><span class="box-en"><b>I</b>n　Toilet items</span></span>
+                <span class="box-names"><span class="box-jp">トイレ用品</span><span class="box-en">Toilet items</span></span>
                 <span class="box-count">中身<b>4/4</b></span>
               </summary>
               <ul class="checks">
@@ -326,7 +337,7 @@ button.stk{cursor:pointer}
             <details class="box">
               <summary>
                 <span class="stack" aria-hidden="true"><i></i><i></i><i class="f"></i></span>
-                <span class="box-names"><span class="box-jp">衛生用品</span><span class="box-en"><b>T</b>ouch　Hygiene items</span></span>
+                <span class="box-names"><span class="box-jp">衛生用品</span><span class="box-en">Hygiene items</span></span>
                 <span class="box-count">中身<b>7/7</b></span>
               </summary>
               <ul class="checks">
@@ -340,6 +351,25 @@ button.stk{cursor:pointer}
               </ul>
             </details>
           </div>
+        </section>
+
+        <section class="panel" id="check" aria-labelledby="checkTitle">
+          <div class="panel-head">
+            <h2 id="checkTitle">点検</h2>
+            <p class="hint">登録日から3か月ごと</p>
+          </div>
+          <div class="due" id="due">
+            <div>
+              <p class="due-label">次回の点検目安日</p>
+              <p class="due-date" id="dueDate"></p>
+            </div>
+            <p class="due-left" id="dueLeft"></p>
+          </div>
+          <dl class="meta">
+            <div><dt>登録日</dt><dd id="regDate"></dd></div>
+            <div><dt>前回の点検</dt><dd id="lastCheck"></dd></div>
+          </dl>
+          <button type="button" class="ghost" id="checkDone">点検を記録する</button>
         </section>
 
       </main>
@@ -412,7 +442,7 @@ button.stk{cursor:pointer}
 
   var PER = 3;   // 1日分 = 3食 / 3L
   var MIN = 3;   // 最低ラインの3本は、空でも並べておく
-  var MAX = 21;  // 3週間ぶんまで
+  var MAX = 28;  // 4週間ぶんまで
   var PRESETS = {
     p1: { main: 3,  staple: 3,  water: 3 },
     p2: { main: 4,  staple: 5,  water: 5 },
@@ -444,8 +474,8 @@ button.stk{cursor:pointer}
     if (d === 0) return 'まずは最低ラインの3日分から';
     if (d < 3) return '最低ラインまであと' + (3 - d) + '日';
     if (d === 3) return '最低ラインの3日分をクリア';
-    if (d < 7) return '1週間まであと' + (7 - d) + '日';
-    return '1週間分をクリア';
+    if (d % 7 === 0) return (d / 7) + '週間分をクリア';
+    return (Math.floor(d / 7) + 1) + '週間まであと' + (7 - d % 7) + '日';
   }
 
   // ---- view ----
@@ -454,7 +484,8 @@ button.stk{cursor:pointer}
     var keep = kit.scrollLeft;
     var h = '<svg class="kt" viewBox="0 0 574 700" aria-hidden="true"><path d="' + K_PATH + '"/></svg>';
     cols.forEach(function (c, i) {
-      h += '<div class="col' + (i === 2 ? ' m-min' : '') + (i === 6 ? ' m-week' : '') + '">';
+      var mark = i === 2 ? '最低ライン' : (i % 7 === 6 ? ((i + 1) / 7) + '週間' : '');
+      h += '<div class="col"' + (mark ? ' data-mark="' + mark + '"' : '') + '>';
       ITEMS.forEach(function (it) {
         var on = c[it.id], next = !on && i === d, key = i + ':' + it.id;
         h += '<button type="button" class="seg' + (on ? ' on' : '') + (next ? ' is-next' : '') +
@@ -483,7 +514,7 @@ button.stk{cursor:pointer}
 
     if (d >= MAX) {
       $('nextWhat').textContent = 'いまは十分です';
-      $('nextThen').textContent = '3週間分そろっています';
+      $('nextThen').textContent = (MAX / 7) + '週間分そろっています';
       ITEMS.forEach(function (it) { $('mini-' + it.id).className = 'sq on'; });
     } else {
       var miss = missingAt(d);
@@ -613,10 +644,10 @@ button.stk{cursor:pointer}
     if (col) kit.scrollTo({ left: Math.max(0, col.offsetLeft - kit.clientWidth / 2 + col.offsetWidth / 2), behavior: 'smooth' });
   }
   var toastTimer = null;
-  function toast(text) {
+  function toast(text, ms) {
     var t = $('toast'); t.textContent = text; t.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2600);
+    toastTimer = setTimeout(function () { t.classList.remove('show'); }, ms || 2600);
   }
 
   $('scanOpen').addEventListener('click', function (e) { openSheet(null, e.currentTarget); });
@@ -633,13 +664,57 @@ button.stk{cursor:pointer}
   $('amtPlus').addEventListener('click', function () { amt = Math.min(limit(), amt + 1); syncStep(); });
   $('commit').addEventListener('click', commit);
 
+  // ---- 点検: 登録日を覚えておき、そこから3か月ごとに目安日を出す ----
+  var CHECK_EVERY = 3;
+  var reg = null, dueK = 1, lastCheck = null;
+  function parseISO(v) { var a = String(v).split('-'); return new Date(+a[0], +a[1] - 1, +a[2]); }
+  function iso(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function today() { var n = window.KIT_TODAY ? parseISO(window.KIT_TODAY) : new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); }
+  function addMonths(d, n) {
+    var t = new Date(d.getFullYear(), d.getMonth() + n, 1);
+    var last = new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate();
+    t.setDate(Math.min(d.getDate(), last));
+    return t;
+  }
+  function dueDate() { return addMonths(reg, CHECK_EVERY * dueK); }
+  function jpDate(d) { return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日'; }
+  function saveCheck() {
+    try { localStorage.setItem('kit-demo-check', JSON.stringify({ reg: iso(reg), k: dueK, last: lastCheck ? iso(lastCheck) : null })); } catch (e) {}
+  }
+  function loadCheck() {
+    try {
+      var v = JSON.parse(localStorage.getItem('kit-demo-check') || 'null');
+      if (v && v.reg) { reg = parseISO(v.reg); dueK = Math.max(1, v.k | 0); lastCheck = v.last ? parseISO(v.last) : null; }
+    } catch (e) {}
+    if (!reg || isNaN(reg.getTime())) { reg = today(); dueK = 1; lastCheck = null; saveCheck(); }
+  }
+  function renderCheck() {
+    var due = dueDate(), left = Math.round((due - today()) / 86400000);
+    $('dueDate').innerHTML = '<b>' + due.getFullYear() + '</b>年<b>' + (due.getMonth() + 1) + '</b>月<b>' + due.getDate() + '</b>日';
+    $('due').classList.toggle('over', left < 0);
+    $('dueLeft').innerHTML = left > 0 ? 'あと<b>' + left + '</b>日' : (left === 0 ? '今日が目安日です' : '目安日を過ぎています');
+    $('regDate').textContent = jpDate(reg);
+    $('lastCheck').textContent = lastCheck ? jpDate(lastCheck) : 'まだありません';
+  }
+  function resetCheck() { dueK = 1; lastCheck = null; saveCheck(); renderCheck(); }
+  $('checkDone').addEventListener('click', function () {
+    var t = today();
+    if (lastCheck && iso(lastCheck) === iso(t)) { toast('今日の点検は記録済みです'); return; }
+    lastCheck = t; dueK++;
+    while (dueDate() <= t) dueK++;
+    saveCheck(); renderCheck();
+    toast('点検を記録しました。次回は' + jpDate(dueDate()));
+  });
+
   // ---- boxes: count the checked items ----
-  Array.prototype.forEach.call(document.querySelectorAll('.box'), function (box) {
-    var out = box.querySelector('.box-count b'), inputs = box.querySelectorAll('input');
-    box.addEventListener('change', function () {
-      var n = 0; Array.prototype.forEach.call(inputs, function (x) { if (x.checked) n++; });
-      out.textContent = n + '/' + inputs.length;
-    });
+  var boxes = document.querySelectorAll('.box');
+  function syncBox(box) {
+    var inputs = box.querySelectorAll('input'), n = 0;
+    Array.prototype.forEach.call(inputs, function (x) { if (x.checked) n++; });
+    box.querySelector('.box-count b').textContent = n + '/' + inputs.length;
+  }
+  Array.prototype.forEach.call(boxes, function (box) {
+    box.addEventListener('change', function () { syncBox(box); });
   });
 
   // ---- tabs ----
@@ -658,11 +733,63 @@ button.stk{cursor:pointer}
   // ---- demo strip ----
   $('demo').addEventListener('click', function (e) {
     var b = e.target.closest('[data-preset]');
-    if (b) { setPreset(b.dataset.preset); scrollEl.scrollTo({ top: 0 }); }
+    if (b) { setPreset(b.dataset.preset); resetCheck(); scrollEl.scrollTo({ top: 0 }); }
   });
   $('demoHide').addEventListener('click', function () { $('demo').hidden = true; });
 
-  setPreset('p2');
+  // ---- 展示モード: デモの切り替えを隠し、触られないと最初の状態に戻る ----
+  // リンクの末尾が #tenji のときに入る。ロゴのある帯を3回タップすると出入りできる。
+  var START = 'p2', IDLE_MS = window.KIT_IDLE_MS || 60000;
+  var exhibit = false, idleTimer = null, device = document.querySelector('.device');
+  function resetAll() {
+    if (!backdrop.hidden) { opener = null; closeSheet(); }
+    Array.prototype.forEach.call(boxes, function (box) {
+      box.open = false;
+      Array.prototype.forEach.call(box.querySelectorAll('input'), function (x) { x.checked = true; });
+      syncBox(box);
+    });
+    setPreset(START);
+    resetCheck();
+    scrollEl.scrollTo({ top: 0 });
+    toast('四角をタップしてみてください', 4000);
+  }
+  function armIdle() {
+    clearTimeout(idleTimer);
+    if (exhibit) idleTimer = setTimeout(function () { resetAll(); armIdle(); }, IDLE_MS);
+  }
+  function fit() {
+    var k = exhibit && window.innerWidth > 480
+      ? Math.min(1.5, (window.innerHeight - 24) / 864, (window.innerWidth - 24) / 410) : 1;
+    device.style.transform = k > 1.02 ? 'scale(' + k.toFixed(3) + ')' : '';
+  }
+  function setExhibit(on) {
+    exhibit = on;
+    $('demo').hidden = on;
+    fit();
+    if (on) { resetAll(); armIdle(); } else { clearTimeout(idleTimer); }
+  }
+  function goExhibit(on) {
+    try { location.hash = on ? 'tenji' : ''; } catch (e) {}
+    if (on !== exhibit) setExhibit(on);
+  }
+  function fromHash() { var on = location.hash === '#tenji'; if (on !== exhibit) setExhibit(on); }
+  var taps = 0, tapTimer = null;
+  $('top').addEventListener('click', function () {
+    taps++; clearTimeout(tapTimer);
+    tapTimer = setTimeout(function () { taps = 0; }, 700);
+    if (taps >= 3) { taps = 0; goExhibit(!exhibit); }
+  });
+  $('demoExhibit').addEventListener('click', function () { goExhibit(true); });
+  window.addEventListener('hashchange', fromHash);
+  window.addEventListener('resize', fit);
+  ['pointerdown', 'keydown', 'wheel', 'touchmove'].forEach(function (ev) {
+    document.addEventListener(ev, armIdle, { passive: true, capture: true });
+  });
+
+  loadCheck();
+  renderCheck();
+  setPreset(START);
+  fromHash();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(updateMore);
 })();
 </script>
