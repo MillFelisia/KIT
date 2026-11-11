@@ -210,11 +210,10 @@ button.stk{cursor:pointer}
 
 <div class="stage">
   <div class="demo" id="demo">
-    <span class="demo-label">デモ</span>
+    <span class="demo-label">デモの状態</span>
     <button type="button" data-preset="p1" aria-pressed="false">3日分</button>
     <button type="button" data-preset="p2" aria-pressed="false">4日分</button>
     <button type="button" data-preset="p3" aria-pressed="false">10日分</button>
-    <button type="button" id="demoExhibit">展示モード</button>
     <button type="button" class="demo-hide" id="demoHide" aria-label="デモの切り替えを隠す">×</button>
   </div>
 
@@ -738,7 +737,7 @@ button.stk{cursor:pointer}
   $('demoHide').addEventListener('click', function () { $('demo').hidden = true; });
 
   // ---- 展示モード: デモの切り替えを隠し、触られないと最初の状態に戻る ----
-  // リンクの末尾が #tenji のときに入る。ロゴのある帯を3回タップすると出入りできる。
+  // リンクの末尾が #kiosk のときだけ入る。ふつうのリンク（QRを含む）は、最初からデモ版で開く。
   var START = 'p2', IDLE_MS = window.KIT_IDLE_MS || 60000;
   var exhibit = false, idleTimer = null, device = document.querySelector('.device');
   function resetAll() {
@@ -768,18 +767,7 @@ button.stk{cursor:pointer}
     fit();
     if (on) { resetAll(); armIdle(); } else { clearTimeout(idleTimer); }
   }
-  function goExhibit(on) {
-    try { location.hash = on ? 'tenji' : ''; } catch (e) {}
-    if (on !== exhibit) setExhibit(on);
-  }
-  function fromHash() { var on = location.hash === '#tenji'; if (on !== exhibit) setExhibit(on); }
-  var taps = 0, tapTimer = null;
-  $('top').addEventListener('click', function () {
-    taps++; clearTimeout(tapTimer);
-    tapTimer = setTimeout(function () { taps = 0; }, 700);
-    if (taps >= 3) { taps = 0; goExhibit(!exhibit); }
-  });
-  $('demoExhibit').addEventListener('click', function () { goExhibit(true); });
+  function fromHash() { var on = location.hash === '#kiosk'; if (on !== exhibit) setExhibit(on); }
   window.addEventListener('hashchange', fromHash);
   window.addEventListener('resize', fit);
   ['pointerdown', 'keydown', 'wheel', 'touchmove'].forEach(function (ev) {
